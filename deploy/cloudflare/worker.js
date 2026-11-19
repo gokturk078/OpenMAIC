@@ -2,11 +2,18 @@ import { Container } from '@cloudflare/containers';
 import { account, session, cookie } from './account.js';
 import { bridge, rpc, ticket, uuid } from './bridge.js';
 
+// Compute placement separately from ownership. Changing the pool generation
+// replaces compute, while the tenant database, R2 prefix and job leases persist.
+const roomName = (env, owner) => (env.COMPUTE_POOL || 'primary') + ':' + owner;
+
 export class Classroom extends Container {
   defaultPort = 3000;
   sleepAfter = '20m';
   async configure(owner) {
-    if (!uuid.test(owner) || !this.ctx.id.equals(this.env.ROOMS.idFromName(owner)))
+    if (
+      !uuid.test(owner) ||
+      !this.ctx.id.equals(this.env.ROOMS.idFromName(roomName(this.env, owner)))
+    )
       throw Error('Invalid account binding');
     const dbPassword = await ticket(this.env, 'database', owner);
     if (!(await this.ctx.storage.get('provisioned'))) {
@@ -46,6 +53,35 @@ export class Classroom extends Container {
       PORT: '3000',
     };
   }
+  // Keep the existing PostgreSQL runner awake while it has executable work.
+  // Only the upstream lease holder executes a step; this alarm never claims a job.
+  async keepRunnerAwake({ owner, failures = 0 }) {
+    try {
+      await this.configure(owner);
+      const response = await this.containerFetch(
+        this.env.PUBLIC_ORIGIN + '/api/generation-runs?active=1',
+        {
+          headers: { cookie: 'maic_origin=' + this.envVars.MAIC_ORIGIN_TICKET },
+        },
+        3000,
+      );
+      if (!response.ok) throw Error('Runner status unavailable');
+      const { runs } = await response.json();
+      if (
+        runs.some(
+          (run) =>
+            ['preparing', 'outlining', 'generating'].includes(run.state) ||
+            (run.state === 'awaiting_outline_confirmation' &&
+              run.input?.outlineReview === 'countdown'),
+        )
+      ) {
+        await this.schedule(90, 'keepRunnerAwake', { owner });
+      }
+    } catch {
+      if (failures < 5)
+        await this.schedule(90, 'keepRunnerAwake', { owner, failures: failures + 1 });
+    }
+  }
   async fetch(req) {
     const owner = req.headers.get('x-maic-account');
     await this.configure(owner);
@@ -58,12 +94,39 @@ export class Classroom extends Container {
         this.envVars.MAIC_ORIGIN_TICKET +
         (locale && /^[A-Za-z-]{2,10}$/.test(locale) ? '; locale=' + locale : ''),
     );
-    const res = await this.containerFetch(new Request(req, { headers: hdr }), 3000);
-    return res;
+    if (
+      ((req.method === 'POST' && new URL(req.url).pathname.startsWith('/api/generation-runs')) ||
+        (req.method === 'GET' && new URL(req.url).pathname === '/')) &&
+      !(await this.listSchedules('keepRunnerAwake')).length
+    ) {
+      await this.schedule(90, 'keepRunnerAwake', { owner });
+    }
+    const request = new Request(req, { headers: hdr });
+    let response = await this.containerFetch(request, 3000);
+    // The platform can replace an instance between the SDK readiness check and fetch.
+    // Replay only reads. A write may already have reached the previous instance.
+    if (response.status === 500 && !response.headers.get('content-type')?.includes('json')) {
+      const message = await response.clone().text();
+      if (/^(Error proxying request to container|Failed to start container):/.test(message)) {
+        if (req.method === 'GET' || req.method === 'HEAD') {
+          await this.startAndWaitForPorts(3000, {
+            instanceGetTimeoutMS: 25000,
+            portReadyTimeoutMS: 45000,
+          });
+          response = await this.containerFetch(request, 3000);
+          if (response.status < 500) return response;
+        }
+        return Response.json(
+          { error: 'Classroom is starting. Please retry shortly.' },
+          { status: 503, headers: { 'retry-after': '5' } },
+        );
+      }
+    }
+    return response;
   }
 }
 
-export default {
+const gateway = {
   async fetch(req, env) {
     try {
       const u = new URL(req.url);
@@ -86,7 +149,9 @@ export default {
       if (req.method !== 'GET' && !(await env.APP_LIMIT.limit({ key: s.user.id })).success)
         return Response.json({ error: 'Too many requests' }, { status: 429 });
       if (
-        /^\/api\/(?:identity\/claim|access-code|verify-|sandbox\/preview\/resolve)/.test(u.pathname)
+        /^\/api\/(?:identity\/claim|access-code\/verify|verify-|sandbox\/preview\/resolve)/.test(
+          u.pathname,
+        )
       )
         return new Response(null, { status: 403 });
       const h = new Headers();
@@ -113,7 +178,7 @@ export default {
       const locale = cookie(req, 'locale');
       if (locale && /^[A-Za-z-]{2,10}$/.test(locale)) h.set('cookie', 'locale=' + locale);
       h.set('x-maic-account', s.user.id);
-      const target = env.ROOMS.getByName(s.user.id);
+      const target = env.ROOMS.getByName(roomName(env, s.user.id));
       const upstream = await target.fetch(new Request(req, { headers: h }));
       let result = new Response(upstream.body, upstream);
       result.headers.delete('set-cookie');
@@ -152,3 +217,5 @@ export default {
     }
   },
 };
+
+export default gateway;

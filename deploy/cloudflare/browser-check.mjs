@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 const qa = JSON.parse(fs.readFileSync(new URL('.secrets.qa.json', import.meta.url)))[0];
 const base = JSON.parse(fs.readFileSync(new URL('wrangler.jsonc', import.meta.url))).vars
   .PUBLIC_ORIGIN;
@@ -20,23 +21,26 @@ try {
     await page.getByRole('button').click();
     await page.waitForURL(base + '/');
     await page.waitForFunction(() => document.querySelectorAll('button').length > 3);
-    console.log(
-      locale,
-      width,
-      'home',
-      await page.title(),
-      'overflow',
-      await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
-      'errors',
-      errors,
-    );
-    console.log((await page.locator('body').innerText()).slice(0, 900));
+    const view = await page.evaluate(() => ({
+      lang: document.documentElement.lang,
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+      text: document.body.innerText,
+    }));
+    assert.equal(view.lang, locale);
+    assert.equal(view.overflow, false);
+    assert.doesNotMatch(view.text, /Enter Access Code/);
+    assert.deepEqual(errors, []);
+    console.log('PASS home', locale, width);
     await page.goto(base + '/account');
     await page.locator('form[action*="logout"] button').click();
     await page.waitForURL(/account\/login/);
-    console.log('logout private API', (await ctx.request.get(base + '/api/stages')).status());
+    assert.equal((await ctx.request.get(base + '/api/stages')).status(), 401);
+    console.log('PASS logout', locale);
     await ctx.close();
   }
+} catch (e) {
+  console.error(e.name, String(e.message).split('Call log:')[0].slice(0, 220));
+  process.exitCode = 1;
 } finally {
   await browser.close();
 }

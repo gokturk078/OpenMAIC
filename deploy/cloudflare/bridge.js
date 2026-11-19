@@ -99,7 +99,20 @@ export async function bridge(req, env) {
     let binary = '';
     for (let i = 0; i < bytes.length; i += 8192)
       binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-    const format = (file.name.split('.').pop() || 'wav').toLowerCase();
+    // The upstream OpenAI-compatible adapter names every non-WAV file audio.webm.
+    // OpenRouter requires the actual encoding alongside the base64 data.
+    const magic = String.fromCharCode(...bytes.subarray(0, 12));
+    let format;
+    if (magic.startsWith('RIFF') && magic.endsWith('WAVE')) format = 'wav';
+    else if (magic.startsWith('ID3') || (bytes[0] === 255 && (bytes[1] & 224) === 224))
+      format = 'mp3';
+    else if (bytes[0] === 26 && bytes[1] === 69 && bytes[2] === 223 && bytes[3] === 163)
+      format = 'webm';
+    else if (magic.startsWith('OggS')) format = 'ogg';
+    else if (magic.slice(4, 8) === 'ftyp') format = 'mp4';
+    else if (magic.startsWith('fLaC')) format = 'flac';
+    else
+      return Response.json({ error: { message: 'Unrecognized audio encoding' } }, { status: 415 });
     body = {
       model: f.get('model'),
       input_audio: { data: btoa(binary), format },

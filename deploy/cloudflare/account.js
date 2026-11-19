@@ -47,7 +47,7 @@ export async function authFetch(env, path, body, token, method) {
   const data = await r.json().catch(() => ({}));
   return { status: r.status, ok: r.ok, data };
 }
-async function verify(env, token) {
+async function verify(env, token, immutableAsset) {
   const issuer = env.SUPABASE_URL + '/auth/v1';
   if (!keys.has(issuer))
     keys.set(issuer, createRemoteJWKSet(new URL(issuer + '/.well-known/jwks.json')));
@@ -62,8 +62,12 @@ async function verify(env, token) {
       payload.email &&
       !payload.is_anonymous &&
       /^[a-f\d-]{36}$/i.test(payload.sub)
-    )
-      return { id: payload.sub, email: payload.email };
+    ) {
+      if (immutableAsset) return { id: payload.sub, email: payload.email };
+      // GoTrue also checks whether the session is still active after logout.
+      const r = await authFetch(env, 'user', undefined, token);
+      if (r.ok && r.data.id === payload.sub && r.data.email_confirmed_at) return r.data;
+    }
   } catch {
     // Older projects may still sign in GoTrue with HS256.
     const r = await authFetch(env, 'user', undefined, token);
@@ -73,7 +77,7 @@ async function verify(env, token) {
 export async function session(req, env) {
   const token = cookie(req, tokenCookie);
   if (token) {
-    const user = await verify(env, token);
+    const user = await verify(env, token, new URL(req.url).pathname.startsWith('/_next/static/'));
     if (user) return { user, token };
   }
   const refresh = cookie(req, refreshCookie);
@@ -286,7 +290,7 @@ export async function account(req, env) {
   )
     return page(req, env, 'login', 'limit', 429);
   if (act === 'logout') {
-    await authFetch(env, 'logout', {}, s.token);
+    await authFetch(env, 'logout?scope=local', {}, s.token);
     const res = redirect('/account/login');
     for (const key of [tokenCookie, refreshCookie, flowCookie])
       res.headers.append('Set-Cookie', set(key, '', 0));
@@ -322,7 +326,17 @@ export async function account(req, env) {
   }
   if (act === 'login') {
     const r = await authFetch(env, 'token?grant_type=password', { email, password });
-    if (r.ok && r.data.access_token) return signedIn(r.data, '/');
+    if (r.ok && r.data.access_token) {
+      const res = signedIn(r.data, '/');
+      if (u.searchParams.has('lang'))
+        res.headers.append(
+          'Set-Cookie',
+          'locale=' +
+            (lang(req) === 'tr' ? 'tr-TR' : 'en-US') +
+            '; Path=/; Max-Age=31536000; Secure; SameSite=Lax',
+        );
+      return res;
+    }
     return page(req, env, act, 'failed', 401);
   }
   if (!['signup', 'forgot'].includes(act)) return new Response(null, { status: 404 });

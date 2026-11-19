@@ -69,7 +69,8 @@ if (mode === 'start') {
   const a = await login(1),
     b = await login(0);
   const bytes = fs.readFileSync(process.argv[3]);
-  const up = await fetch(base + '/api/materials?scope=library', {
+  const scope = process.argv[4] === 'classic' ? 'extract=true' : 'scope=library';
+  const up = await fetch(base + '/api/materials?' + scope, {
     method: 'POST',
     headers: {
       cookie: a,
