@@ -6,6 +6,11 @@ const qa = JSON.parse(fs.readFileSync(new URL('.secrets.qa.json', import.meta.ur
 const runFile = new URL('.secrets.runs.json', import.meta.url);
 const runs = fs.existsSync(runFile) ? JSON.parse(fs.readFileSync(runFile)) : {};
 async function login(i) {
+  const cache = new URL('.secrets.session-' + i + '.json', import.meta.url);
+  if (fs.existsSync(cache)) {
+    const saved = JSON.parse(fs.readFileSync(cache));
+    if (Date.now() - saved.time < 30 * 60 * 1000) return saved.cookie;
+  }
   const { email, password } = qa[i];
   const r = await fetch(base + '/account/login', {
     method: 'POST',
@@ -14,11 +19,13 @@ async function login(i) {
     redirect: 'manual',
   });
   assert.equal(r.status, 303, 'password login');
-  return r.headers
+  const cookie = r.headers
     .getSetCookie()
     .filter((x) => !x.includes('Max-Age=0'))
     .map((x) => x.split(';')[0])
     .join('; ');
+  fs.writeFileSync(cache, JSON.stringify({ time: Date.now(), cookie }), { mode: 0o600 });
+  return cookie;
 }
 async function endpoint(c, path, body) {
   const r = await fetch(base + path, {
@@ -46,7 +53,10 @@ if (mode === 'start') {
       process.argv[5] ||
       'Türkçe kısa bir ders oluştur. Bir üçgenin iç açılarının toplamını bir örnek üzerinde iki slayt ve bir kısa quiz ile anlat. Sadece bu konuyu işle.',
     outlineReview: 'auto',
-    interactive: false,
+    interactive: label === 'technical',
+    ...(label === 'pdf'
+      ? { materialIds: [fs.readFileSync(new URL('.secrets.pdf-id', import.meta.url), 'utf8')] }
+      : {}),
   });
   console.log('start', r.status, r.j.error || r.j.message || '', Object.keys(r.j));
   if (r.status === 202) {
@@ -55,12 +65,46 @@ if (mode === 'start') {
     runs[label] = { i, id: run.id || run.runId };
     fs.writeFileSync(runFile, JSON.stringify(runs), { mode: 0o600 });
   } else console.log(JSON.stringify(r.j).slice(0, 350));
+} else if (mode === 'pdf') {
+  const a = await login(1),
+    b = await login(0);
+  const bytes = fs.readFileSync(process.argv[3]);
+  const up = await fetch(base + '/api/materials?scope=library', {
+    method: 'POST',
+    headers: {
+      cookie: a,
+      origin: base,
+      'content-type': 'application/pdf',
+      'x-material-filename': 'Solar-cycle.pdf',
+    },
+    body: bytes,
+  });
+  const data = await up.json();
+  console.log('PDF upload', up.status, data.materialId || data.error || data.message);
+  assert.equal(up.status, 201);
+  fs.writeFileSync(new URL('.secrets.pdf-id', import.meta.url), data.materialId, { mode: 0o600 });
+  const path = '/api/materials/' + data.materialId + '/original';
+  const own = await fetch(base + path, { headers: { cookie: a } });
+  assert.equal(own.status, 200);
+  assert.deepEqual(Buffer.from(await own.arrayBuffer()), bytes);
+  const other = await fetch(base + path, { headers: { cookie: b } });
+  console.log('PASS exact PDF bytes; other account status', other.status);
+  assert.ok([403, 404].includes(other.status));
 } else if (mode === 'poll') {
   for (const [label, v] of Object.entries(runs)) {
     const c = await login(v.i);
     const r = await endpoint(c, '/api/generation-runs/' + v.id);
     const a = r.j.run || r.j.data?.run || r.j;
-    console.log(label, r.status, JSON.stringify(a).slice(0, 1000));
+    console.log(
+      label,
+      r.status,
+      a.state,
+      a.step,
+      a.stageId,
+      a.error || '',
+      a.outline?.outlines?.length,
+      a.seq,
+    );
   }
 } else {
   const r = await fetch(base + '/api/stages', { redirect: 'manual' });

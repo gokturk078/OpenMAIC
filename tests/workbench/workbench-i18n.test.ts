@@ -63,8 +63,9 @@ describe('workbench translator locales', () => {
 describe('workbench copy covers every supported locale', () => {
   const source = flatten(workbenchEn);
 
-  it('has twelve locales to check', () => {
-    expect(supportedLocales.length).toBe(12);
+  it('includes Turkish alongside all upstream locales', () => {
+    expect(supportedLocales.map((l) => l.code)).toContain('tr-TR');
+    expect(supportedLocales.length).toBe(13);
     expect(source.size).toBeGreaterThanOrEqual(200);
   });
 
@@ -140,7 +141,8 @@ describe('workbench copy covers every supported locale', () => {
     const overlayLocales = supportedLocales
       .map((locale) => locale.code)
       .filter((code) => code !== 'zh-CN' && code !== 'en-US');
-    expect(overlayLocales).toHaveLength(10);
+    expect(overlayLocales).toContain('tr-TR');
+    expect(overlayLocales).toHaveLength(supportedLocales.length - 2);
     for (const code of overlayLocales) {
       const overlay = JSON.parse(
         fs.readFileSync(
