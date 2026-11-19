@@ -51,5 +51,18 @@ export function injectIntoDocumentBodyEnd(html: string, injection: string): stri
     (node): node is DefaultTreeAdapterTypes.Element => isElement(node) && node.tagName === 'body',
   );
   const offset = body?.sourceCodeLocation?.endTag?.startOffset ?? html.length;
-  return insertAt(html, offset, injection);
+  // A generated document may end with complete JavaScript and no closing
+  // script tag. Keep the observer in its own script, even in that document.
+  let last: DefaultTreeAdapterTypes.ChildNode | undefined = body;
+  while (last && 'childNodes' in last && last.childNodes.length) {
+    if (isElement(last) && last.tagName === 'script') break;
+    last = last.childNodes.at(-1);
+  }
+  const needsScriptEnd =
+    last &&
+    isElement(last) &&
+    last.tagName === 'script' &&
+    last.sourceCodeLocation?.startTag &&
+    !last.sourceCodeLocation.endTag;
+  return insertAt(html, offset, (needsScriptEnd ? '\n</script>' : '') + injection);
 }

@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { patchHtmlForIframe } from '@/lib/utils/iframe';
 
 describe('patchHtmlForIframe', () => {
+  it('closes a generated script at EOF before appending the observation responder', () => {
+    const html = '<html><body><button>Step</button><script>globalThis.step = 1;';
+    const out = patchHtmlForIframe(html, {
+      sceneId: 'binary',
+      scopeId: 'activity',
+      documentId: 'example',
+    });
+    expect(out).toMatch(/globalThis\.step = 1;\s*<\/script><script data-maic-observation-reader>/);
+  });
   it('injects the storage shim and sizing CSS after <head>', () => {
     const out = patchHtmlForIframe(
       '<!DOCTYPE html><html><head><title>t</title></head><body></body></html>',
