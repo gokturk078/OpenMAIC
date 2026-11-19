@@ -72,6 +72,7 @@ import { getGenerationRunHooks } from '@/lib/server/generation-run-hooks/registr
 import {
   classifyHostFailure,
   isNonRetryableHostFailure,
+  isProviderQuotaRefusal,
   runGenerationExecution,
 } from '@/lib/server/generation-run-hooks/runtime';
 import type { GeneratedAgentConfig, Scene, Stage } from '@/lib/types/stage';
@@ -1034,6 +1035,7 @@ async function executeClaimedRun(
                 owner,
                 {
                   target,
+                  languageDirective,
                   stageId,
                   text: action.text,
                   audioId: `tts_s${scene.order}_${action.id}`,
@@ -1069,7 +1071,20 @@ async function executeClaimedRun(
       }
     };
     const narrateOne = async (action: SpeechAction) => {
-      const assetId = await narrate(action);
+      let assetId;
+      try {
+        assetId = await narrate(action);
+      } catch (error) {
+        if (
+          signal.aborted ||
+          process.env.OPENMAIC_HOSTED !== 'true' ||
+          (!isProviderQuotaRefusal(error) &&
+            !(error instanceof Error && error.message === 'Local narration is unavailable'))
+        )
+          throw error;
+        // Keep the transcript and any successfully recorded lines when speech is unavailable.
+        scene.narrationIncomplete = true;
+      }
       if (assetId) {
         allocated.push(assetId);
         action.audioId = assetId;

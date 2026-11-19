@@ -1132,6 +1132,7 @@
     "notFound": "Curso não encontrado",
     "notFoundDesc": "Este curso não existe ou foi excluído.",
     "loadUnavailable": "Não foi possível carregar este curso",
+    "narrationIncomplete": "Alguns trechos da narração estão disponíveis apenas em texto.",
     "loadUnavailableDesc": "Não foi possível obter o curso. Verifique seu acesso ou tente novamente.",
     "backToHome": "Voltar ao início",
     "runOutlining": "Criando o roteiro…",

@@ -94,6 +94,7 @@ import type { RunNarrationTarget } from './narration-voice';
 
 export interface NarrateClipInput {
   target: RunNarrationTarget;
+  languageDirective?: string;
   stageId: string;
   text: string;
   /** The request label (`tts_s<order>_<actionId>`); the stored clip gets an allocated id. */
@@ -549,6 +550,7 @@ export const defaultRunStepServices: RunStepServices = {
     const narration = await synthesizeNarration(
       {
         text: input.text,
+        languageDirective: input.languageDirective,
         audioId: input.audioId,
         connection: input.target.connection,
         requestedVoice: input.voice,

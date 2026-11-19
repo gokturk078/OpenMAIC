@@ -88,6 +88,12 @@ RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm run build:packages
 
 RUN pnpm build
 
+FROM debian:bookworm-slim AS speech-runtime
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates bzip2 libgomp1 libstdc++6 && rm -rf /var/lib/apt/lists/*
+COPY deploy/narration/install.sh /tmp/install-speech
+RUN /tmp/install-speech
+COPY deploy/narration/speak.sh /opt/narration/speak
+
 # ---- Stage 4: Runner ----
 FROM node:22-alpine AS runner
 
@@ -111,6 +117,9 @@ RUN if [ -n "$ALPINE_MIRROR" ]; then \
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
+COPY --from=speech-runtime /opt/narration /opt/narration
+RUN /opt/narration/speak tr 0 1 /tmp/smoke.wav 'Merhaba dünya.' 2>/tmp/speech-log && test -s /tmp/smoke.wav || { cat /tmp/speech-log; exit 1; }
+RUN rm -f /tmp/smoke.wav /tmp/speech-log
 COPY --from=builder /app/deploy/product-models.yml ./product-models.yml
 COPY --from=builder /app/deploy/supabase-ca.crt ./supabase-ca.crt
 ENV NODE_EXTRA_CA_CERTS=/app/supabase-ca.crt

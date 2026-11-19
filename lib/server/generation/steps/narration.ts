@@ -20,10 +20,12 @@ import { recordGenerationUsage } from '@/lib/server/usage-storage';
 import { resolveTTSModel, slotTTSModel } from '@/lib/server/provider-config';
 import { adapterOptions, type MediaConnection } from '@/lib/server/model-config/media';
 
+import { providerReservationRefused, synthesizeLocally } from './hosted-narration';
 import { StepRefusal, type StepContext } from './context';
 
 export interface NarrationInput {
   text: string;
+  languageDirective?: string;
   /** The audio's id, for the log. */
   audioId: string;
   /** The tts slot's connection. */
@@ -170,15 +172,36 @@ export async function synthesizeNarration(
 
   // Generate audio
   authorizeMediaModel(connection, 'tts', config.modelId);
-  const { audio, format } = await generateTTS(config, text);
+  let result: NarrationResult;
+  try {
+    result = {
+      ...(await generateTTS(config, text)),
+      providerId: ttsProviderId,
+      modelId: config.modelId,
+    };
+  } catch (error) {
+    if (
+      process.env.OPENMAIC_HOSTED !== 'true' ||
+      config.modelId !== 'google/gemini-3.8-flash-lite-tts' ||
+      !providerReservationRefused(error)
+    )
+      throw error;
+    result = await synthesizeLocally(
+      text,
+      ttsVoice,
+      config.speed,
+      input.languageDirective,
+      ctx.signal,
+    );
+  }
 
   void recordGenerationUsage({
     kind: 'tts',
     unit: 'character',
-    providerId: ttsProviderId,
-    modelId: config.modelId,
+    providerId: result.providerId,
+    modelId: result.modelId,
     quantity: text.length,
   });
 
-  return { audio, format, providerId: ttsProviderId, modelId: config.modelId };
+  return result;
 }

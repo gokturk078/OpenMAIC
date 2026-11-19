@@ -1117,6 +1117,7 @@
     "notFound": "找不到這門課程",
     "notFoundDesc": "課程不存在，或已被刪除。",
     "loadUnavailable": "暫時無法載入這門課程",
+    "narrationIncomplete": "部分講解僅提供文字。",
     "loadUnavailableDesc": "無法取得課程，請檢查存取權限或重試。",
     "backToHome": "返回首頁",
     "runOutlining": "正在生成大綱…",

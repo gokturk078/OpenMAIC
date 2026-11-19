@@ -175,6 +175,12 @@ export async function bridge(req, env) {
         .json()
         .catch(() => null)
     )?.error;
+    if (error?.metadata?.reason === 'weight_exceeds_budget') {
+      return Response.json(
+        { error: { code: 'insufficient_quota', message: error.message, metadata: error.metadata } },
+        { status: 402, headers: { 'cache-control': 'no-store' } },
+      );
+    }
     if (error?.metadata?.reason === 'in_flight_budget_exhausted') {
       const wait = r.headers.get('retry-after') || error.metadata.headers?.['Retry-After'] || '120';
       return Response.json(

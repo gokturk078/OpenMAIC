@@ -108,6 +108,8 @@ export type AppScene = DslScene<Action, SceneContent> & {
    * scene-derived outline.
    */
   outlineId?: string;
+  /** At least one transcript line could not be synthesized in this scene. */
+  narrationIncomplete?: boolean;
 };
 export type Scene = AppScene;
 

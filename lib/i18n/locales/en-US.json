@@ -1132,6 +1132,7 @@
     "notFound": "Course not found",
     "notFoundDesc": "This course does not exist, or it has been deleted.",
     "loadUnavailable": "Couldn't load this course",
+    "narrationIncomplete": "Some lines are available as text only.",
     "loadUnavailableDesc": "The course could not be retrieved. Check your access or try again.",
     "backToHome": "Back to home",
     "runOutlining": "Outlining…",

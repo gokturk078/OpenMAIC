@@ -1132,6 +1132,7 @@
     "notFound": "Cours introuvable",
     "notFoundDesc": "Ce cours n’existe pas ou a été supprimé.",
     "loadUnavailable": "Impossible de charger ce cours",
+    "narrationIncomplete": "Certains passages de la narration sont disponibles uniquement sous forme de texte.",
     "loadUnavailableDesc": "Le cours n'a pas pu être récupéré. Vérifiez votre accès ou réessayez.",
     "backToHome": "Retour à l’accueil",
     "runOutlining": "Création du plan…",

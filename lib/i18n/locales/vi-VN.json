@@ -1132,6 +1132,7 @@
     "notFound": "Không tìm thấy khóa học",
     "notFoundDesc": "Khóa học này không tồn tại hoặc đã bị xóa.",
     "loadUnavailable": "Không tải được khóa học này",
+    "narrationIncomplete": "Một số đoạn thuyết minh chỉ có ở dạng văn bản.",
     "loadUnavailableDesc": "Không thể truy xuất khóa học. Hãy kiểm tra quyền truy cập hoặc thử lại.",
     "backToHome": "Về trang chủ",
     "runOutlining": "Đang lập dàn ý…",

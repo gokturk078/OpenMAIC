@@ -1132,6 +1132,7 @@
     "notFound": "강의를 찾을 수 없습니다",
     "notFoundDesc": "해당 강의가 존재하지 않거나 이미 삭제되었습니다.",
     "loadUnavailable": "강의를 불러오지 못했습니다",
+    "narrationIncomplete": "일부 설명은 텍스트로만 제공됩니다.",
     "loadUnavailableDesc": "강의를 가져올 수 없습니다. 접근 권한을 확인하거나 다시 시도해 주세요.",
     "backToHome": "홈으로 돌아가기",
     "runOutlining": "개요 작성 중…",

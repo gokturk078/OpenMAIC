@@ -77,6 +77,13 @@ function ClassroomSurfaceContent({
   const { loadFromStorage } = useStageStore();
   const loadedClassroomId = useStageStore((s) => s.stage?.id ?? null);
   const { t } = useI18n();
+  const missingSpeech = useStageStore((s) =>
+    s.scenes.some(
+      (scene) =>
+        scene.narrationIncomplete &&
+        scene.actions?.some((a) => a.type === 'speech' && a.text && !a.audioId),
+    ),
+  );
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -317,6 +324,11 @@ function ClassroomSurfaceContent({
               : 'h-screen flex flex-col overflow-hidden'
           }
         >
+          {view === 'stage' && missingSpeech && (
+            <p role="status" className="bg-amber-50 px-4 py-2 text-sm text-amber-950">
+              {t('classroom.narrationIncomplete')}
+            </p>
+          )}
           {view === 'loading' ? (
             <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
               <div className="flex flex-col items-center gap-3 text-muted-foreground">

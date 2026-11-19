@@ -355,6 +355,23 @@ describe('step retries', () => {
     expect(refused).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for the provider reservation before retrying the same clip', async () => {
+    const sleep = vi.fn(async () => {});
+    const onRetry = vi.fn();
+    const limited = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error('busy'), { statusCode: 429, retryAfterMs: 120_000 }),
+      )
+      .mockResolvedValueOnce('audio');
+    await expect(withRouteRetry(limited, { ...options(400), sleep, onRetry })).resolves.toBe(
+      'audio',
+    );
+    expect(sleep).toHaveBeenCalledWith(120_000, undefined);
+    expect(onRetry).toHaveBeenCalledWith(expect.objectContaining({ nextDelayMs: 120_000 }));
+    expect(limited).toHaveBeenCalledTimes(2);
+  });
+
   it('retries a refusal where the route answers it with a 500, not where it answers a 400', async () => {
     const refusal = new StepRefusal('generation-failed', 'empty');
     const content = vi.fn().mockRejectedValue(refusal);

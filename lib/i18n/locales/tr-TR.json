@@ -1132,6 +1132,7 @@
     "notFound": "Kurs bulunamadı",
     "notFoundDesc": "Bu kurs mevcut değil veya silinmiş.",
     "loadUnavailable": "Bu kurs yüklenemedi",
+    "narrationIncomplete": "Bazı anlatım satırlarını yalnızca metin olarak okuyabilirsiniz.",
     "loadUnavailableDesc": "Kurs alınamadı. Erişiminizi kontrol edin veya tekrar deneyin.",
     "backToHome": "Ana sayfaya dön",
     "runOutlining": "Anahat oluşturuluyor…",
