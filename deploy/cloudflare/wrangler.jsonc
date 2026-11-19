@@ -6,6 +6,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": {
+    "COMPUTE_POOL": "production-2",
     "PRODUCT_NAME": "OpenMAIC",
     "PUBLIC_ORIGIN": "https://openmaic.g-kahriman078.workers.dev",
     "SUPABASE_URL": "https://nqwgpkatevanbhiutetz.supabase.co",
@@ -15,7 +16,7 @@
   "r2_buckets": [{"binding":"FILES","bucket_name":"openmaic-private-assets"}],
   "durable_objects": {"bindings":[{"name":"ROOMS","class_name":"Classroom"}]},
   "migrations": [{"tag":"v1","new_sqlite_classes":["Classroom"]}],
-  "containers": [{"class_name":"Classroom","image":"registry.cloudflare.com/624219bc02ce67c5573efba0c091f73b/openmaic-product:1.4.2-hosted2","instance_type":"standard-2","max_instances":6}],
+  "containers": [{"class_name":"Classroom","image":"registry.cloudflare.com/624219bc02ce67c5573efba0c091f73b/openmaic-product:1cf2b534fdbefe82","instance_type":"standard-2","max_instances":6}],
   "ratelimits":[
     {"name":"AUTH_LIMIT","namespace_id":"65301","simple":{"limit":12,"period":60}},
     {"name":"APP_LIMIT","namespace_id":"65302","simple":{"limit":100,"period":60}}
