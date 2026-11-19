@@ -1,0 +1,23 @@
+name: Product container
+on:
+  push:
+    branches: [product/cloudflare]
+    paths-ignore: ['deploy/cloudflare/**', 'supabase/**', '*.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Build production image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}:product-${GITHUB_SHA}"
+          docker build --build-arg NEXT_PUBLIC_PRO_WORKBENCH_ENABLED=true --build-arg NEXT_PUBLIC_ENABLE_PPTX_IMPORT=true -t "$image" .
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$image"

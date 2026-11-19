@@ -39,3 +39,8 @@ docs
 # isolated MP4 render service — built as its own image (render-service/Dockerfile),
 # never part of the main app image.
 render-service
+
+supabase/.temp
+deploy/cloudflare/.secrets*
+deploy/cloudflare/.wrangler
+deploy/cloudflare/node_modules

@@ -17,6 +17,20 @@ export async function register(): Promise<void> {
   // want; the persistence stack is Node-only.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
+  if (process.env.OPENMAIC_HOSTED === 'true') {
+    const owner = process.env.MAIC_OWNER;
+    const ticket = process.env.MAIC_ORIGIN_TICKET;
+    const endpoint = process.env.MAIC_R2_ENDPOINT;
+    const assetTicket = process.env.MAIC_ASSET_TICKET;
+    if (!owner || !ticket || !endpoint || !assetTicket) throw new Error('Missing hosted account configuration');
+    const { cloudflareAccount } = await import('@/lib/server/identity/host/cloudflare');
+    const { configureOwnerAuthentication } = await import('@/lib/server/identity');
+    const { configureAssetByteStore } = await import('@/lib/server/persistence-hooks');
+    const { cloudflareBytes } = await import('@/lib/persistence/cloudflare-bytes');
+    configureOwnerAuthentication({ methods: [cloudflareAccount(owner, ticket)], anonymousFallback: false });
+    configureAssetByteStore({ name: 'private-r2', create: () => cloudflareBytes(endpoint, assetTicket) });
+  }
+
   const { warnIfDefaultDatabasePasswordIsPublished } =
     await import('@/lib/server/database-password-warning');
   warnIfDefaultDatabasePasswordIsPublished();

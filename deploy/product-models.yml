@@ -1,0 +1,38 @@
+providers:
+  openrouter:
+    preset: openrouter
+    baseUrl: ${MAIC_AI_ENDPOINT}
+    apiKey: ${MAIC_AI_TICKET}
+    models: [anthropic/claude-sonnet-5.5, anthropic/claude-sonnet-4.6]
+  narration:
+    preset: openai-tts
+    baseUrl: ${MAIC_AI_ENDPOINT}
+    apiKey: ${MAIC_AI_TICKET}
+    models: [google/gemini-3.1-flash-tts-preview]
+    options:
+      defaultVoice: Kore
+    voices:
+      - { id: Kore, name: Kore }
+      - { id: Puck, name: Puck }
+  transcription:
+    preset: openai-asr
+    baseUrl: ${MAIC_AI_ENDPOINT}
+    apiKey: ${MAIC_AI_TICKET}
+    models: [openai/gpt-4o-transcribe]
+  illustration:
+    preset: openrouter-image
+    baseUrl: ${MAIC_AI_ENDPOINT}
+    apiKey: ${MAIC_AI_TICKET}
+    models: [google/gemini-nano-banana-2.1]
+slots:
+  llm:
+    model: openrouter:anthropic/claude-sonnet-5.5
+    fallback: openrouter:anthropic/claude-sonnet-4.6
+  agent:
+    model: openrouter:anthropic/claude-sonnet-5.5
+    api: openai-completions
+  tts: narration:google/gemini-3.1-flash-tts-preview
+  asr: transcription:openai/gpt-4o-transcribe
+  image: illustration:google/gemini-nano-banana-2.1
+lock: all
+allowUserKeys: false
