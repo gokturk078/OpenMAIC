@@ -26,6 +26,7 @@ type PageCopy = (typeof enUS)['workspace']['knowledgeBase'];
 const LOADERS: Record<Locale, () => Promise<{ default: typeof enUS }>> = {
   'zh-CN': () => import('@/lib/i18n/locales/zh-CN.json'),
   'zh-TW': () => import('@/lib/i18n/locales/zh-TW.json'),
+  'tr-TR': () => import('@/lib/i18n/locales/tr-TR.json'),
   'en-US': () => import('@/lib/i18n/locales/en-US.json'),
   'ja-JP': () => import('@/lib/i18n/locales/ja-JP.json'),
   'ru-RU': () => import('@/lib/i18n/locales/ru-RU.json'),

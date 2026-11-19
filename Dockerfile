@@ -112,6 +112,8 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/deploy/product-models.yml ./product-models.yml
+COPY --from=builder /app/deploy/supabase-ca.crt ./supabase-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/app/supabase-ca.crt
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

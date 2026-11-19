@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/i18n';
+import trTR from '@/lib/i18n/locales/tr-TR.json';
 import arSA from '@/lib/i18n/locales/ar-SA.json';
 import deDE from '@/lib/i18n/locales/de-DE.json';
 import enUS from '@/lib/i18n/locales/en-US.json';
@@ -45,6 +46,7 @@ function normalizePercentHexCase(value: string): string {
 }
 
 const LOCALE_RESOURCES: Record<Locale, Record<string, unknown>> = {
+  'tr-TR': trTR,
   'en-US': enUS,
   'zh-CN': zhCN,
   'zh-TW': zhTW,

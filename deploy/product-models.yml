@@ -8,14 +8,14 @@ providers:
     preset: openai-tts
     baseUrl: ${MAIC_AI_ENDPOINT}
     apiKey: ${MAIC_AI_TICKET}
-    models: [google/gemini-3.1-flash-tts-preview]
+    models: [elevenlabs/eleven-multilingual-v2]
     options:
-      defaultVoice: Kore
+      defaultVoice: sarah
     voices:
-      - { id: Kore, name: Kore }
-      - { id: Puck, name: Puck }
+      - { id: sarah, name: sarah }
+      - { id: george, name: george }
   transcription:
-    preset: openai-asr
+    preset: openai-whisper
     baseUrl: ${MAIC_AI_ENDPOINT}
     apiKey: ${MAIC_AI_TICKET}
     models: [openai/gpt-4o-transcribe]
@@ -31,7 +31,7 @@ slots:
   agent:
     model: openrouter:anthropic/claude-sonnet-5.5
     api: openai-completions
-  tts: narration:google/gemini-3.1-flash-tts-preview
+  tts: narration:elevenlabs/eleven-multilingual-v2
   asr: transcription:openai/gpt-4o-transcribe
   image: illustration:google/gemini-nano-banana-2.1
 lock: all

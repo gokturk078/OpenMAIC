@@ -127,6 +127,15 @@ export async function recordUsage(
       ...(input.unit ? { unit: input.unit } : {}),
     };
 
+    if (!opts.baseDir && process.env.OPENMAIC_HOSTED === 'true') {
+      const { hostedState } = await import('@/lib/persistence/hosted-state');
+      const db = await hostedState();
+      await db.query('INSERT INTO hosted_usage(month,record) VALUES ($1,$2)', [
+        now.toISOString().slice(0, 7),
+        record,
+      ]);
+      return;
+    }
     const dir = usageDir(opts.baseDir);
     await fs.mkdir(dir, { recursive: true });
     await fs.appendFile(monthlyFile(dir, now), JSON.stringify(record) + '\n', 'utf-8');
@@ -176,6 +185,15 @@ interface ReadOptions {
  * 'llm'; any legacy cost fields are simply ignored.
  */
 export async function readUsageRecords(opts: ReadOptions = {}): Promise<UsageRecord[]> {
+  if (!opts.baseDir && process.env.OPENMAIC_HOSTED === 'true') {
+    const { hostedState } = await import('@/lib/persistence/hosted-state');
+    const db = await hostedState();
+    const { rows } = await db.query(
+      'SELECT record FROM hosted_usage WHERE ($1::text[] IS NULL OR month=ANY($1)) ORDER BY seq',
+      [opts.months?.length ? opts.months : null],
+    );
+    return rows.map((row) => row.record as UsageRecord);
+  }
   const dir = usageDir(opts.baseDir);
   let files: string[];
   try {

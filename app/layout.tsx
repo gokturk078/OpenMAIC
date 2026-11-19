@@ -72,7 +72,11 @@ export default async function RootLayout({
   const { initialMobileLayout } = identifyRequestDevice(headerStore.get('user-agent'));
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html
+      data-hosted={process.env.OPENMAIC_HOSTED === 'true' ? 'true' : undefined}
+      lang={locale}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

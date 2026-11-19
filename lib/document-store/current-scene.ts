@@ -50,24 +50,40 @@ export function saveCurrentSceneValue(
   return kv.set(key(stageId), value, 'device');
 }
 
-export function loadCurrentScene(
+export async function loadCurrentScene(
   stageId: string,
   deps: CurrentSceneDeps = {},
 ): Promise<CurrentSceneValue | null> {
-  return loadCurrentSceneValue(stageId, resolveKv(deps.kv));
+  const local = await loadCurrentSceneValue(stageId, resolveKv(deps.kv));
+  if (deps.kv || typeof document === 'undefined' || !document.documentElement.dataset.hosted)
+    return local;
+  const response = await fetch('/api/stages/' + encodeURIComponent(stageId) + '/position', {
+    cache: 'no-store',
+  }).catch(() => null);
+  const remote: unknown = response?.ok ? await response.json() : null;
+  return isCurrentSceneValue(remote) &&
+    (!local || Date.parse(remote.updatedAt) >= Date.parse(local.updatedAt))
+    ? remote
+    : local;
 }
 
 /** Last-write-wins device position. */
-export function saveCurrentScene(
+export async function saveCurrentScene(
   stageId: string,
   sceneId: string | null,
   deps: CurrentSceneDeps = {},
 ): Promise<void> {
-  return saveCurrentSceneValue(
-    stageId,
-    { sceneId, updatedAt: new Date().toISOString() },
-    resolveKv(deps.kv),
-  );
+  const value = { sceneId, updatedAt: new Date().toISOString() };
+  await saveCurrentSceneValue(stageId, value, resolveKv(deps.kv));
+  if (!deps.kv && typeof document !== 'undefined' && document.documentElement.dataset.hosted) {
+    const response = await fetch('/api/stages/' + encodeURIComponent(stageId) + '/position', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(value),
+      keepalive: true,
+    });
+    if (!response.ok && response.status !== 404) throw new Error('Could not sync lesson position');
+  }
 }
 
 export function clearCurrentScene(stageId: string, deps: CurrentSceneDeps = {}): Promise<void> {

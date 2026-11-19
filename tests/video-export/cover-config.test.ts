@@ -149,6 +149,11 @@ describe('getVideoExportCoverLabels', () => {
       'quizCtaPrompt' | 'pblCtaPrompt' | 'ctaVisit'
     >
   > = {
+    'tr-TR': {
+      quizCtaPrompt: 'Etkileşimli bir sınav denemek ister misiniz?',
+      pblCtaPrompt: 'Proje tabanlı öğrenmeyi keşfetmek ister misiniz?',
+      ctaVisit: 'Ziyaret et',
+    },
     'en-US': {
       quizCtaPrompt: 'Want to try an interactive quiz?',
       pblCtaPrompt: 'Want to explore project-based learning?',

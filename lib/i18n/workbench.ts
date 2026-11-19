@@ -15,6 +15,7 @@
  * degrades to a readable sentence rather than to `workbench.tool.label.x`, and
  * `tests/workbench/workbench-i18n.test.ts` holds the ten to the shape.
  */
+import workbenchTrTR from './workbench-locales/tr-TR.json' with { type: 'json' };
 import workbenchArSA from './workbench-locales/ar-SA.json' with { type: 'json' };
 import workbenchDeDE from './workbench-locales/de-DE.json' with { type: 'json' };
 import workbenchEsMX from './workbench-locales/es-MX.json' with { type: 'json' };
@@ -788,6 +789,7 @@ const localeOverrides: Record<string, WorkbenchResource> = {
   'ja-JP': workbenchJaJP,
   'ko-KR': workbenchKoKR,
   'de-DE': workbenchDeDE,
+  'tr-TR': workbenchTrTR,
   'fr-FR': workbenchFrFR,
   'es-MX': workbenchEsMX,
   'pt-BR': workbenchPtBR,
