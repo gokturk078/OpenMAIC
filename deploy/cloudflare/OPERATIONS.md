@@ -21,10 +21,10 @@ R2 bucket adı `openmaic-private-assets`. Worker'a bağlı `FILES` üzerinden er
 | MAIC_MASTER | İlk kurulumda üretilen yüksek entropili Worker secret. Hesap başına DB parolalarını ve servis kimliklerini türetir. Güvenli yedeği gereklidir. Rotasyon, mevcut DB rollerinin parolalarını da değiştirmeyi gerektirir |
 | PRODUCT_NAME, PUBLIC_ORIGIN, SUPABASE_URL, POOL_URL | wrangler.jsonc içindeki marka, kalıcı adres ve bağlantı hedefleri. POOL_URL kullanıcı adı ve parola içermez |
 | COMPUTE_POOL | Hesap verisinden ayrı, kalıcı işlemci grubu adı. Aynı değeri normal dağıtımlarda koruyun. Değiştirilmesi kullanıcıları yeni işlemcilere taşır |
-| DAILY_CALLS, GLOBAL_DAILY_CALLS | UTC günü için hesap başına ve toplam ücretli model çağrısı kotası. İlk değerler 100 ve 600 |
+| DAILY_CALLS, DAILY_SPEECH_CALLS, GLOBAL_DAILY_CALLS | UTC günü için hesap başına 100 seslendirme dışı çağrı ve 300 seslendirme çağrısı. Proje toplamı 600 çağrı |
 | DATABASE_URL, MAIC_OWNER, MAIC_ORIGIN_TICKET, MAIC_ASSET_TICKET, MAIC_AI_TICKET, OPENMAIC_SECRET_KEY | Worker her hesaba özel olarak Container'a sağlar |
 
-Üretim sırları bu makinede deploy/cloudflare/.secrets.json içinde, yalnızca işletim sistemi kullanıcısına açık olarak saklanır. Erişim bilgilerini build argümanlarına koymayın. `deploy/product-models.yml` görev ve model eşlemesini, `bridge.js` sunucu tarafındaki izin listesini içerir. Yeni bir model için ikisini birlikte güncelleyin. Sohbet ve dersler Claude Sonnet 5.5, LLM yedeği Sonnet 4.6, ses ElevenLabs Multilingual v2, transkripsiyon GPT-4o Transcribe, görsel Gemini Nano Banana 2.1 kullanır. Kullanıcı sağlayıcı anahtarı yükleme kapalıdır. Video üretim modeli ve üçüncü taraf kod çalıştırma sağlayıcısı yapılandırılmamıştır.
+Üretim sırları bu makinede deploy/cloudflare/.secrets.json içinde, yalnızca işletim sistemi kullanıcısına açık olarak saklanır. Erişim bilgilerini build argümanlarına koymayın. `deploy/product-models.yml` görev ve model eşlemesini, `bridge.js` sunucu tarafındaki izin listesini içerir. Yeni bir model için ikisini birlikte güncelleyin. Sohbet, ders ve öğretmen ajanı Claude Haiku 5.5 kullanır. Görselleri Gemini 3.1 Flash Lite Image, seslendirmeyi Gemini 3.8 Flash Lite TTS (Kore veya Puck), transkripsiyonu GPT-4o Transcribe sağlar. Worker, eski derslerden gelen model adlarını da yeni modellere yönlendirir. Gemini PCM sesini tarayıcı için WAV olarak sunar. QA_MODEL_OWNER tanımlandığında yalnız o hesabın istekleri QA_OPENROUTER_KEY ile ücretlendirilir. Bu anahtar yoksa ilgili test hesabının isteği reddedilir. Kullanıcı sağlayıcı anahtarı yükleme kapalıdır. Video üretim modeli ve üçüncü taraf kod çalıştırma sağlayıcısı yapılandırılmamıştır.
 
 Özel SMTP ertelendi. E-posta onayı açık kalır. Operatör Supabase Auth üzerinden doğrulanmış kullanıcı oluşturabilir. SMTP bağlandığında mevcut kullanıcı sistemi ve callback kullanılmaya devam eder. Supabase Auth URL Configuration içindeki Site URL canlı origin, izinli dönüş adresi ise bu origin altında /account/callback olmalıdır. [Supabase SMTP belgesi](https://supabase.com/docs/guides/auth/auth-smtp)
 
@@ -42,7 +42,7 @@ LOG_FORMAT=text pnpm exec vitest run
 supabase migration list --linked
 ```
 
-Yeni bir kurulumu önce doğru Supabase projesine `supabase link --project-ref "$SUPABASE_PROJECT_REF"` ile bağlayın. Migrasyon farklarını inceledikten sonra `supabase db push --linked` uygulayın. Bu dağıtımın 202611190001 migrasyonu uzakta kayıtlıdır.
+Yeni bir kurulumu önce doğru Supabase projesine `supabase link --project-ref "$SUPABASE_PROJECT_REF"` ile bağlayın. Migrasyon farklarını inceledikten sonra `supabase db push --linked` uygulayın. Bu dağıtımın 202611190001 ve 202611190002 migrasyonları uzakta kayıtlıdır.
 
 Uygulama değişiklikleri product/cloudflare dalına gönderildiğinde Product container iş akışı GitHub Container Registry'ye Linux amd64 imajını yükler. İş akışı başarılı olduktan sonra tam uygulama commit'i ile çalıştırın.
 

@@ -25,8 +25,8 @@ const checks = {
     const f = new FormData();
     f.set(
       'audio',
-      new Blob([Buffer.from(j.base64, 'base64')], { type: 'audio/mpeg' }),
-      'angles.mp3',
+      new Blob([Buffer.from(j.base64, 'base64')], { type: 'audio/wav' }),
+      'angles.wav',
     );
     f.set('language', 'tr');
     const asr = await call('/api/transcription', f);

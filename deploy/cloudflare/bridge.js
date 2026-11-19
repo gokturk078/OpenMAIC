@@ -41,9 +41,13 @@ export async function rpc(env, name, body) {
   return r.status === 204 ? null : r.json();
 }
 const models = {
-  'chat/completions': ['anthropic/claude-sonnet-5.5', 'anthropic/claude-sonnet-4.6'],
-  images: ['google/gemini-nano-banana-2.1'],
-  'audio/speech': ['elevenlabs/eleven-multilingual-v2'],
+  'chat/completions': [
+    'anthropic/claude-haiku-5.5',
+    'anthropic/claude-sonnet-5.5',
+    'anthropic/claude-sonnet-4.6',
+  ],
+  images: ['google/gemini-3.1-flash-lite-image', 'google/gemini-nano-banana-2.1'],
+  'audio/speech': ['google/gemini-3.8-flash-lite-tts', 'elevenlabs/eleven-multilingual-v2'],
   'audio/transcriptions': ['openai/gpt-4o-transcribe'],
 };
 export async function bridge(req, env) {
@@ -120,6 +124,10 @@ export async function bridge(req, env) {
     };
   } else body = await req.json();
   if (!models[path].includes(body.model)) return new Response(null, { status: 403 });
+  // Translate requests from containers and preferences created before the model migration.
+  body.model = models[path][0];
+  const apiKey = owner === env.QA_MODEL_OWNER ? env.QA_OPENROUTER_KEY : env.OPENROUTER_API_KEY;
+  if (!apiKey) return new Response(null, { status: 503 });
   if (path === 'chat/completions') {
     body.max_tokens = Math.min(
       Math.max(1, Number(body.max_tokens || body.max_completion_tokens || 8192)),
@@ -134,11 +142,15 @@ export async function bridge(req, env) {
   if (path === 'images') body.n = 1;
   if (path === 'audio/speech' && (typeof body.input !== 'string' || body.input.length > 8000))
     return new Response(null, { status: 413 });
+  if (path === 'audio/speech') {
+    const voice = ['puck', 'george'].includes(String(body.voice).toLowerCase()) ? 'Puck' : 'Kore';
+    body = { model: body.model, input: body.input, voice, response_format: 'pcm' };
+  }
   const permit = await rpc(env, 'maic_admit', {
     p_owner: owner,
     p_task: path,
     p_model: body.model,
-    p_max: Number(env.DAILY_CALLS),
+    p_max: Number(path === 'audio/speech' ? env.DAILY_SPEECH_CALLS : env.DAILY_CALLS),
     p_global: Number(env.GLOBAL_DAILY_CALLS),
   });
   if (!permit)
@@ -149,12 +161,13 @@ export async function bridge(req, env) {
   const r = await fetch('https://openrouter.ai/api/v1/' + path, {
     method: 'POST',
     headers: {
-      Authorization: 'Bearer ' + env.OPENROUTER_API_KEY,
+      Authorization: 'Bearer ' + apiKey,
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
     redirect: 'manual',
   });
+  if (path === 'audio/speech' && r.ok) return speechResponse(r);
   return new Response(r.body, {
     status: r.status,
     headers: {
@@ -162,4 +175,42 @@ export async function bridge(req, env) {
       'cache-control': 'no-store',
     },
   });
+}
+
+// Gemini returns mono signed 16-bit, 24 kHz PCM. Browsers require its WAV container.
+export async function speechResponse(response) {
+  const type = response.headers.get('content-type') || '';
+  if (!/^(audio\/|application\/octet-stream)/i.test(type))
+    return new Response(null, { status: 502 });
+  const pcm = new Uint8Array(await response.arrayBuffer());
+  if (!pcm.length || pcm.length > 32 * 1024 * 1024 - 44 || pcm.length % 2)
+    return new Response(null, { status: 502 });
+  const headers = { 'content-type': 'audio/wav', 'cache-control': 'no-store' };
+  const signature = String.fromCharCode(...pcm.subarray(0, 12));
+  if (signature.startsWith('RIFF') && signature.endsWith('WAVE'))
+    return new Response(pcm, { headers });
+  const header = new Uint8Array(44);
+  const view = new DataView(header.buffer);
+  for (const [offset, label] of [
+    [0, 'RIFF'],
+    [8, 'WAVEfmt '],
+    [36, 'data'],
+  ])
+    header.set(encoder.encode(label), offset);
+  for (const [offset, value] of [
+    [4, pcm.length + 36],
+    [16, 16],
+    [24, 24000],
+    [28, 48000],
+    [40, pcm.length],
+  ])
+    view.setUint32(offset, value, true);
+  for (const [offset, value] of [
+    [20, 1],
+    [22, 1],
+    [32, 2],
+    [34, 16],
+  ])
+    view.setUint16(offset, value, true);
+  return new Response(new Blob([header, pcm]), { headers });
 }

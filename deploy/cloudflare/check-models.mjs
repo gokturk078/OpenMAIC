@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { speechResponse } from './bridge.js';
 const headers = {
   Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY,
   'content-type': 'application/json',
@@ -16,14 +17,16 @@ for (const [language, input, expected] of [
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: 'elevenlabs/eleven-multilingual-v2',
-      voice: 'sarah',
+      model: 'google/gemini-3.8-flash-lite-tts',
+      voice: 'Kore',
       input,
-      response_format: 'mp3',
+      response_format: 'pcm',
     }),
   });
   if (!r.ok) throw Error('TTS ' + r.status + ' ' + (await r.text()).slice(0, 300));
-  const audio = Buffer.from(await r.arrayBuffer());
+  const wav = await speechResponse(r);
+  assert.ok(wav.ok);
+  const audio = Buffer.from(await wav.arrayBuffer());
   console.log(language, 'TTS', r.status, audio.length, 'bytes', Date.now() - start, 'ms');
   assert.ok(audio.length > 1000);
   const asr = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
@@ -31,7 +34,7 @@ for (const [language, input, expected] of [
     headers,
     body: JSON.stringify({
       model: 'openai/gpt-4o-transcribe',
-      input_audio: { data: audio.toString('base64'), format: 'mp3' },
+      input_audio: { data: audio.toString('base64'), format: 'wav' },
       language,
     }),
   });

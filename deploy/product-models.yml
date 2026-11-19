@@ -3,17 +3,17 @@ providers:
     preset: openrouter
     baseUrl: ${MAIC_AI_ENDPOINT}
     apiKey: ${MAIC_AI_TICKET}
-    models: [anthropic/claude-sonnet-5.5, anthropic/claude-sonnet-4.6]
+    models: [anthropic/claude-haiku-5.5]
   narration:
     preset: openai-tts
     baseUrl: ${MAIC_AI_ENDPOINT}
     apiKey: ${MAIC_AI_TICKET}
-    models: [elevenlabs/eleven-multilingual-v2]
+    models: [google/gemini-3.8-flash-lite-tts]
     options:
-      defaultVoice: sarah
+      defaultVoice: Kore
     voices:
-      - { id: sarah, name: sarah }
-      - { id: george, name: george }
+      - { id: Kore, name: Kore }
+      - { id: Puck, name: Puck }
   transcription:
     preset: openai-whisper
     baseUrl: ${MAIC_AI_ENDPOINT}
@@ -23,16 +23,15 @@ providers:
     preset: openrouter-image
     baseUrl: ${MAIC_AI_ENDPOINT}
     apiKey: ${MAIC_AI_TICKET}
-    models: [google/gemini-nano-banana-2.1]
+    models: [google/gemini-3.1-flash-lite-image]
 slots:
   llm:
-    model: openrouter:anthropic/claude-sonnet-5.5
-    fallback: openrouter:anthropic/claude-sonnet-4.6
+    model: openrouter:anthropic/claude-haiku-5.5
   agent:
-    model: openrouter:anthropic/claude-sonnet-5.5
+    model: openrouter:anthropic/claude-haiku-5.5
     api: openai-completions
-  tts: narration:elevenlabs/eleven-multilingual-v2
+  tts: narration:google/gemini-3.8-flash-lite-tts
   asr: transcription:openai/gpt-4o-transcribe
-  image: illustration:google/gemini-nano-banana-2.1
+  image: illustration:google/gemini-3.1-flash-lite-image
 lock: all
 allowUserKeys: false
