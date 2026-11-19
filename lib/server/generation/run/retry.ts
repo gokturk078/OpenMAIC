@@ -73,6 +73,7 @@ export async function withRouteRetry<T>(
   options: RouteRetryOptions,
 ): Promise<T> {
   let cause = '';
+  let providerWaitMs = 0;
   try {
     return await withGenerationRetry(
       async () => {
@@ -84,6 +85,11 @@ export async function withRouteRetry<T>(
           // `rethrow` still goes through RouteStatusError so the retry loop
           // sees `isRetryable: false` and the caller gets the original error.
           // Rethrowing it raw would let a "timed out" message be retried.
+          const retryAfterMs = (error as { retryAfterMs?: unknown } | null)?.retryAfterMs;
+          providerWaitMs =
+            typeof retryAfterMs === 'number' && Number.isFinite(retryAfterMs)
+              ? Math.min(300_000, Math.max(0, retryAfterMs))
+              : 0;
           const passthrough = options.rethrow?.(error) === true;
           throw new RouteStatusError(
             error,
@@ -97,9 +103,16 @@ export async function withRouteRetry<T>(
       {
         label: options.label,
         maxRetries: options.maxRetries,
-        sleep: options.sleep,
+        sleep: (ms, signal) => options.sleep(Math.max(ms, providerWaitMs), signal),
         signal: options.signal,
-        onRetry: options.onRetry && ((event) => options.onRetry!({ ...event, cause })),
+        onRetry:
+          options.onRetry &&
+          ((event) =>
+            options.onRetry!({
+              ...event,
+              nextDelayMs: Math.max(event.nextDelayMs, providerWaitMs),
+              cause,
+            })),
       },
     );
   } catch (error) {

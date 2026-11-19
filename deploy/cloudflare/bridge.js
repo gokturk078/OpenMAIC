@@ -168,10 +168,28 @@ export async function bridge(req, env) {
     redirect: 'manual',
   });
   if (path === 'audio/speech' && r.ok) return speechResponse(r);
+  if (r.status === 402) {
+    const error = (
+      await r
+        .clone()
+        .json()
+        .catch(() => null)
+    )?.error;
+    if (error?.metadata?.reason === 'in_flight_budget_exhausted') {
+      const wait = r.headers.get('retry-after') || error.metadata.headers?.['Retry-After'] || '120';
+      return Response.json(
+        {
+          error: { code: 'rate_limited', message: 'Waiting for previous model requests to settle' },
+        },
+        { status: 429, headers: { 'retry-after': wait, 'cache-control': 'no-store' } },
+      );
+    }
+  }
   return new Response(r.body, {
     status: r.status,
     headers: {
       'content-type': r.headers.get('content-type') || 'application/json',
+      ...(r.headers.has('retry-after') ? { 'retry-after': r.headers.get('retry-after') } : {}),
       'cache-control': 'no-store',
     },
   });
