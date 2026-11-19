@@ -111,3 +111,5 @@ eval/orchestration/results-child-failure/
 /supabase/.temp/
 /deploy/cloudflare/.secrets*
 /deploy/cloudflare/.wrangler/
+
+/deploy/cloudflare/node_modules/

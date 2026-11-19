@@ -1,3 +1,4 @@
+import { materials } from './materials.js';
 const encoder = new TextEncoder();
 export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 async function key(env) {
@@ -49,6 +50,8 @@ export async function bridge(req, env) {
   const [, , kind, owner, ...segments] = new URL(req.url).pathname.split('/');
   if (!['assets', 'ai'].includes(kind) || !(await authorized(req, env, kind, owner)))
     return new Response(null, { status: 403 });
+  if (kind === 'assets' && segments.length === 1 && segments[0] === 'materials')
+    return materials(req, env, owner);
   if (kind === 'assets') {
     if (
       segments.length !== 2 ||

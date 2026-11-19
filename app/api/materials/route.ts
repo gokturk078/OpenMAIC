@@ -16,6 +16,7 @@
  * Classic uploads/listing need persistence only. Durable library uploads and
  * session-scoped reads additionally need the agent runtime.
  */
+import { matchesMaterialType } from '@/lib/server/materials/signature';
 import { createHash, randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
 
@@ -343,6 +344,14 @@ export async function POST(req: NextRequest) {
         return reject(
           apiError('INVALID_REQUEST', 400, 'empty body'),
           'empty_stream',
+          responseHeaders,
+        );
+      }
+      if (process.env.OPENMAIC_HOSTED === 'true' && !matchesMaterialType(bytes, mime)) {
+        await abandon();
+        return reject(
+          apiError('INVALID_REQUEST', 415, 'File content does not match its media type'),
+          'content_mismatch',
           responseHeaders,
         );
       }

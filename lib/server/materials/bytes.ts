@@ -1,3 +1,4 @@
+import { hostedMaterialStore } from './cloudflare-store';
 import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
@@ -88,6 +89,12 @@ export class LocalMaterialByteStore implements MaterialByteStore {
 let sharedStore: MaterialByteStore | null = null;
 
 export function getMaterialByteStore(): MaterialByteStore {
+  if (!sharedStore && process.env.OPENMAIC_HOSTED === 'true') {
+    const endpoint = process.env.MAIC_R2_ENDPOINT;
+    const ticket = process.env.MAIC_ASSET_TICKET;
+    if (!endpoint || !ticket) throw new Error('Private material storage is not configured');
+    sharedStore = hostedMaterialStore(endpoint, ticket);
+  }
   sharedStore ??= new LocalMaterialByteStore();
   return sharedStore;
 }
