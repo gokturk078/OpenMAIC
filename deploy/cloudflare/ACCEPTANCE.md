@@ -1,13 +1,13 @@
 # OpenMAIC üretim kabul raporu
 
-19 Kasım 2026. Hedef [kalıcı Cloudflare uygulaması](https://openmaic.g-kahriman078.workers.dev). Başlangıç [OpenMAIC v1.4.2](https://github.com/THU-MAIC/OpenMAIC/commit/eb7c1bcccc3d083684c26ae1d5d187d41122cb10). Denemelerde iki ayrı, yönetici yetkisi olmayan, Supabase üzerinde doğrulanmış test hesabı kullanıldı. Kişisel oturum ve parolalar rapordan çıkarıldı.
+19 Kasım 2026. Hedef [kalıcı Cloudflare uygulaması](https://openmaic.g-kahriman078.workers.dev). Başlangıç [OpenMAIC v1.4.2](https://github.com/THU-MAIC/OpenMAIC/commit/eb7c1bcccc3d083684c26ae1d5d187d41122cb10). Denemelerde iki ayrı, yönetici yetkisi olmayan, Supabase üzerinde doğrulanmış test hesabı kullanıldı. Son uygulama imajı 1cf2b534fdbefe82818c74380fafff3d4ad70e3c, Worker sürümü a21ea755-30a8-436c-8682-fdcca896ea29. Özel giriş bilgileri yalnızca yerel makinededir.
 
 ## Üretimde yapılan kontroller
 
 | Sonuç | İşlem | Gözlenen sonuç |
 | --- | --- | --- |
 | PASS | HTTPS ve erişim | Kalıcı workers.dev üzerinden Türkçe ve İngilizce giriş. Özel ders API'si oturumsuz isteğe 401 verdi. |
-| PASS | Gerçek parola girişi ve çıkış | Chrome'da mobil ve masaüstü oturum açıldı. Çıkış sonrası aynı tarayıcıda özel uç 401 döndürdü. |
+| PASS | Gerçek parola girişi ve çıkış | Chrome'da mobil ve masaüstü oturum açıldı. Çıkış sonrası aynı tarayıcıda özel uç 401 döndürdü. İptal edilmiş oturum çerezleri süreleri dolmadan yeniden sunulduğunda da 401 alındı. |
 | PASS | Profil ve oturum yenileme | Profil adı Supabase üzerinden kaydedildi. Erişim çerezi kaldırıldığında refresh çerezi ile iki yeni oturum çerezi alındı. |
 | BLOCKED | Herkese açık e-posta aktivasyonu ve unutulan parolayı e-postayla geri alma | Supabase site ve callback URL'leri canlı adrese ayarlandı. Özel SMTP olmadığı için herkese e-posta teslimi doğrulanamadı. Kurucu bu işi erteledi. Yönetici tarafından doğrulanan hesaplarla parola girişi doğrulandı. |
 | PASS | Supabase PostgreSQL | Mevcut projede 202611190001 hem yerel hem uzak migrasyon listesinde. Ayrı PostgreSQL rolü kendi şemasına yazdı. BYPASSRLS kapalıydı. İkinci şemadan doğrudan okuma izin hatası verdi. |
@@ -25,6 +25,7 @@
 | PASS | Agent workbench | Yeni sohbet ekranı, dersler ve bilgi bankası açıldı. Gerçek bir ajan işi queued durumundan succeeded durumuna geçti. Diğer hesabın iş okuması 404 döndürdü. |
 | PASS | Kota ve model bilgilerinin gizliliği | Normal Supabase anahtarı kota RPC'sine erişemedi. Servis rolüyle sıfır kalan bütçenin kabulü false oldu. Model ayarları yanıtında operatör anahtarları veya hesaba özgü servis sırları görülmedi. |
 | PASS | Uzun iş ve işlemci değişimi | İstemci bağlantısı kesikken işler ilerledi. İşlemci değişimi başladığında teknik dersin ikinci sahnesi üretim aşamasındaydı. Yeni işlemcide aynı iş ve ders kimlikleriyle sonraki sahneye ilerlediği görüldü. Dakika-saniye örneği aynı iş kimliğiyle iki sahnede tamamlandı. Yeni işlemcide önceden kaydedilmiş dersler ve dosyalar açıldı. |
+| PASS | Etkileşimli ikili arama | Üretilen sahnede eksik JavaScript kapanışı ve eksik bir durum güncelleme işlevi bulundu. Oynatıcı kapanış sorununa karşı düzeltildi. Mevcut sahnenin bağımsız alıştırma kopyasına erişilebilir durum bildirimi eklendi. Canlı tarayıcıda 20 hedefi seçilip ilk adım tıklandığında orta değer 8 bulundu, sağ yarı seçildi ve sayfa hatası oluşmadı. Ücretli yeniden üretim çalıştırılmadı. |
 | BLOCKED | Teknik dersin üç sahnesinin tamamı | İkili arama simülasyonu üretildi. Son sahnenin üretimi test bütçesini korumak için operatör tarafından duraklatıldı. İki test hesabının çalışan üretim işi sayısı sıfır olarak kontrol edildi. |
 | BLOCKED | Canlı sağlayıcı kesintisi ve yük testi | Gerçek sağlayıcıya ek ücretli hata enjeksiyonu veya çok kullanıcılı kapasite testi uygulanmadı. Her olası kesinti ve eşzamanlılık durumunun kapsandığı iddia edilmiyor. |
 

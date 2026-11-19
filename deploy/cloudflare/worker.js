@@ -131,6 +131,29 @@ const gateway = {
     try {
       const u = new URL(req.url);
       if (u.origin !== env.PUBLIC_ORIGIN) return new Response(null, { status: 404 });
+      // Sandboxed simulations have an opaque origin. Their pinned public JS,
+      // styles and fonts must load without a learner's session cookie.
+      const vendorPrefix = '/vendor/interactive/';
+      if (u.pathname.startsWith(vendorPrefix)) {
+        if (!['GET', 'HEAD'].includes(req.method)) return new Response(null, { status: 405 });
+        const assetUrl = new URL(u);
+        assetUrl.pathname = '/' + u.pathname.slice(vendorPrefix.length);
+        const asset = await env.INTERACTIVE_LIBRARIES.fetch(
+          new Request(assetUrl, {
+            method: req.method,
+            headers: { accept: req.headers.get('accept') || '*/*' },
+          }),
+        );
+        const response = new Response(asset.body, asset);
+        response.headers.set('Access-Control-Allow-Origin', '*');
+        response.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set(
+          'Cache-Control',
+          asset.ok ? 'public, max-age=31536000, immutable' : 'no-store',
+        );
+        return response;
+      }
       if (u.pathname.startsWith('/_host/')) return await bridge(req, env);
       if (u.pathname === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n');
       if (u.pathname === '/account' || u.pathname.startsWith('/account/'))

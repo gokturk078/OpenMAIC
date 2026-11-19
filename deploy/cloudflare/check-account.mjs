@@ -39,3 +39,9 @@ const logout = await fetch(base + '/account/logout', {
 assert.equal(logout.status, 303);
 assert.ok(logout.headers.getSetCookie().some((c) => c.includes('Max-Age=0')));
 console.log('PASS logout clears credentials');
+const closed = await fetch(base + '/api/stages', {
+  headers: { cookie: session },
+  redirect: 'manual',
+});
+assert.equal(closed.status, 401);
+console.log('PASS revoked Supabase session is refused before token expiry');

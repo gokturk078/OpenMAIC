@@ -6,6 +6,8 @@ Canlı uygulama [OpenMAIC](https://openmaic.g-kahriman078.workers.dev). Ürün d
 
 Worker, Supabase Auth oturumunu doğrular. Hesap başına bir Durable Object, OpenMAIC sunucusunun çalıştığı Container'a yönlendirir. PostgreSQL oturum havuzu TLS sertifikasını doğrular. Her hesabın ayrı veritabanı rolü ve şeması vardır. Kontrol tablolarının sahibi uygulama rolünden ayrıdır. Kota ve hesap hazırlama RPC'lerini yalnızca Worker çağırabilir. OpenMAIC ders işlerini kendi PostgreSQL iş kaydı, kilidi ve kontrol noktaları üzerinden yürütür. Durable Object alarmı etkin ders varken sunucuyu uyandırır.
 
+Sürümü sabitlenmiş etkileşimli sınıf kütüphaneleri INTERACTIVE_LIBRARIES statik dosya binding’iyle /vendor/interactive/ altında sunulur. Bu dizin, R2’deki öğrenci dosyalarından ayrıdır.
+
 R2 bucket adı `openmaic-private-assets`. Worker'a bağlı `FILES` üzerinden erişilir. Kaynak dosya ve içerik özetine göre saklanan medya, kullanıcıya özel anahtar öneki kullanır. Depolama bağdaştırıcıları mevcut OpenMAIC silme ve referans sayımı akışlarına bağlıdır. Kaynak yükleme üst sınırı 32 MiB, varlık havuzu kotası 256 MiB. Uygulama hesap başına bir eşzamanlı ders üretir. Altı etkin standard-2 Container kapasitesi vardır. Son kullanımdan 20 dakika sonra Container uyuyabilir. Kapasiteyi değiştirmek için Wrangler yapılandırmasını ve Supabase bağlantı havuzu kapasitesini birlikte değerlendirin.
 
 ## Kimlik, model ve gizli değerler
@@ -33,6 +35,7 @@ Node 22.23+, pnpm (package.json packageManager alanındaki sürüm), Docker, Git
 ```sh
 pnpm install --frozen-lockfile
 npm ci --prefix deploy/cloudflare
+node scripts/sync-interactive-assets.mjs
 pnpm exec next typegen
 pnpm exec tsc --noEmit
 LOG_FORMAT=text pnpm exec vitest run
